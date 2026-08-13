@@ -1,25 +1,57 @@
-# Event-Driven Microservices Assignment
+# Event-Driven Microservices System
 
-A microservices-based backend system consisting of a User Service, Notification Service, and API Gateway.
+A small production-oriented microservices system demonstrating asynchronous communication between independent backend services using **NATS JetStream**.
 
-## Architecture
+The system consists of:
+
+- API Gateway
+- User Service
+- Notification Service
+- PostgreSQL
+- NATS JetStream
+- Transactional Outbox Pattern
+
+The User Service and Notification Service do **not** communicate through REST APIs or WebSockets. They communicate asynchronously through NATS JetStream.
+
+---
+
+# 1. Architecture
 
 ```text
-Client
-  |
-  v
-API Gateway :3003
-  |
-  v
-User Service :3001
-  |
-  +----> PostgreSQL :5433
-  |
-  +----> Transactional Outbox
-              |
-              v
-        NATS JetStream
-         USER_EVENTS
-              |
-              v
-   Notification Service :3002
+                         Client
+                           |
+                           | HTTP
+                           v
+                  +-------------------+
+                  |    API Gateway    |
+                  |      :3003        |
+                  +---------+---------+
+                            |
+                            | HTTP
+                            v
+                  +-------------------+
+                  |    User Service   |
+                  |      :3001        |
+                  +---------+---------+
+                            |
+                 +----------+----------+
+                 |                     |
+                 | PostgreSQL          | Outbox Event
+                 v                     v
+          +-------------+      +----------------+
+          | PostgreSQL  |      | Outbox Worker  |
+          |    :5433    |      +-------+--------+
+          +-------------+              |
+                                       | Publish
+                                       v
+                              +-------------------+
+                              |  NATS JetStream  |
+                              |    USER_EVENTS   |
+                              +---------+---------+
+                                        |
+                                        | Async Event
+                                        v
+                              +----------------------+
+                              | Notification Service |
+                              |        :3002         |
+                              +----------------------+
