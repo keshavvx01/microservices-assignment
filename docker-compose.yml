@@ -1,0 +1,34 @@
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: microservices-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nats:
+    image: nats:2.11-alpine
+    container_name: microservices-nats
+    restart: unless-stopped
+    command:
+      - "-js"
+      - "-m"
+      - "8222"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+volumes:
+  postgres_data:
